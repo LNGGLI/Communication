@@ -1,37 +1,39 @@
-# MQTT test repo — Laptop broker, Raspberry Pi client
+# NATS test repo — Laptop broker, Raspberry Pi client
 
-This repository provides a minimal Python setup to test MQTT communication between a laptop (which will host the broker) and a Raspberry Pi over Wi‑Fi.
+This repository provides a minimal Python setup to test **NATS** communication between a laptop
+(which hosts the broker) and a Raspberry Pi over Wi‑Fi. The original MQTT/Mosquitto code has
+been adapted to use the asyncio‑based `nats-py` client library.
 
 Files and directory structure
 ```
 src/
-  mqtt/           # Core MQTT library
+  nats_client/    # Core NATS client library wrapper
     __init__.py
-    client.py     # MqttClient, MqttConfig, MessageHandler classes
-  examples/       # Example scripts
-    laptop_publisher.py      # Publisher (run on laptop/test machine)
-    raspberry_subscriber.py  # Subscriber (run on Raspberry Pi)
+    client.py     # NatsClient, NatsConfig, MessageHandler classes
+  examples/       # Example scripts (publisher + subscriber)
 requirements.txt
 README.md
 ```
 
 Quick overview
-- Laptop: install and run the MQTT broker (Mosquitto). Run `laptop_publisher.py` to publish test messages.
-- Raspberry Pi: run `raspberry_subscriber.py` to receive messages from the laptop's broker.
+- Laptop: install and run the NATS broker (`nats-server`). Use `publisher.py` to publish
+  test messages.
+- Raspberry Pi: run `subscriber.py` to receive messages from the laptop's broker.
 
 Prerequisites
 - On both machines: Python 3.8+ and pip.
-- On the laptop (broker host): install Mosquitto.
+- On the laptop (broker host): install the NATS server.
 
-Install Mosquitto on Debian/Ubuntu (laptop):
+Install NATS server on Debian/Ubuntu (laptop):
 
 ```bash
+# download latest release from https://github.com/nats-io/nats-server/releases
+# or use your package manager if available; for example:
 sudo apt update
-sudo apt install -y mosquitto mosquitto-clients
-sudo systemctl enable --now mosquitto
+sudo apt install -y nats-server
 ```
 
-If the laptop runs a firewall, allow port 1883/TCP in the local network.
+The server listens on port `4222` by default. Adjust firewall rules if necessary.
 
 Python packages (both machines):
 
@@ -41,38 +43,41 @@ python3 -m pip install -r requirements.txt
 
 How to run
 
-- Start the broker on the laptop (Mosquitto usually runs automatically after install). Verify it:
+- Start the broker on the laptop (you can also use `./scripts/run_local_broker.sh`):
 
 ```bash
-mosquitto_sub -h localhost -t test/topic -v &
-mosquitto_pub -h localhost -t test/topic -m "hello" 
+nats-server -c nats_local.conf
 ```
 
-- On the laptop (publisher): run the publisher pointing at the laptop's LAN IP (or `localhost` to test locally):
+- On the laptop (publisher): run the publisher pointing at the broker URL (LAN IP or
+  `localhost` for local testing):
 
 ```bash
-python3 src/examples/laptop_publisher.py --broker 192.168.1.10
+python3 src/examples/publisher.py --server nats://192.168.1.10:4222
 ```
 
-- On the Raspberry Pi (subscriber): run the subscriber, pointing at the laptop's IP:
+- On the Raspberry Pi (subscriber): run the subscriber in a similar way:
 
 ```bash
-python3 src/examples/raspberry_subscriber.py --broker 192.168.1.10
+python3 src/examples/subscriber.py --server nats://192.168.1.10:4222
 ```
 
 What each file is for
-- [src/mqtt/](src/mqtt/): core MQTT library
-  - [src/mqtt/__init__.py](src/mqtt/__init__.py): exports `MqttClient`, `MqttConfig`, `MessageHandler`
-  - [src/mqtt/client.py](src/mqtt/client.py): small, well-documented class wrapper around `paho-mqtt` with helpful callbacks.
-- [src/examples/](src/examples/): example scripts
-  - [src/examples/laptop_publisher.py](src/examples/laptop_publisher.py): publisher that sends periodic test messages (run on laptop or test machine).
-  - [src/examples/raspberry_subscriber.py](src/examples/raspberry_subscriber.py): subscribes and prints received messages (intended for Raspberry Pi).
+- [src/nats_client/](src/nats_client/): core NATS library wrapper
+  - [src/nats_client/__init__.py](src/nats_client/__init__.py): exports `NatsClient`, `NatsConfig`, `MessageHandler`
+  - [src/nats_client/client.py](src/nats_client/client.py): small wrapper around `nats-py` with a synchronous
+    convenience layer and callback hooks.
+- [src/examples/](src/examples/): example scripts demonstrating publish/subscribe usage.
 
 Explanation of the main Python imports used
-- `paho.mqtt.client`: the standard Python MQTT client library — used to connect, publish and subscribe to an MQTT broker.
-- `argparse`: simple CLI argument parsing (e.g., to pass `--broker` IP).
-- `time` / `threading`: small utilities used for sleeping and running the network loop in the background.
+- `nats.aio.client`: the official asyncio‑based NATS client library; used to connect, publish and
+  subscribe to a NATS broker.
+- `argparse`: simple CLI argument parsing (e.g. to pass `--server` URL).
+- `asyncio` / `threading`: utilities used for running the event loop in a background thread so that
+  example scripts can remain synchronous.
 - `dataclasses`: convenient typed containers (for configuration).
 
 Next steps
-- Run the install commands above on both machines, then start the subscriber on the Pi and publisher on the laptop. If you want, I can also add an example that uses TLS or credentials.
+- Install the NATS server, install the Python requirements on both machines, then start the
+  subscriber on the Pi and publisher on the laptop. The `run_local_broker.sh` script can be used
+  to launch the broker with the provided `nats_local.conf` file.

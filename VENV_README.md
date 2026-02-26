@@ -48,7 +48,7 @@ Run one-off commands without activating (preferred in scripts/CI):
 **Tips & troubleshooting**
 - If you get `ModuleNotFoundError` when running `python3` directly, either activate the `venv` or use `./venv/bin/python3`.
 - `requirements.txt` pins dependencies for reproducibility. Run `pip install -r requirements.txt` after creating/activating the venv.
-- If `pip` cannot find a pinned version, try using a released version available on PyPI (see changes made in this repo where `paho-mqtt` was pinned to a valid version).
+- If `pip` cannot find a pinned version, try using a released version available on PyPI (see changes made in this repo where `nats-py` was pinned to a valid version).
 - On some systems you may need `python3-venv` installed (Debian/Ubuntu):
 ```bash
 sudo apt update && sudo apt install python3-venv
@@ -73,12 +73,12 @@ pip install -r requirements.txt
 ```
 5. Run the Raspberry subscriber (uses venv packages):
 ```bash
-python src/examples/raspberry_subscriber.py --broker 127.0.0.1 --topic test/topic --port 1883
+python src/examples/raspberry_subscriber.py --server nats://127.0.0.1:4222
 ```
 
 Or run without activating:
 ```bash
-./venv/bin/python3 src/examples/raspberry_subscriber.py --broker 127.0.0.1
+./venv/bin/python3 src/examples/raspberry_subscriber.py --server nats://127.0.0.1:4222
 ```
 
 That's it — this file is intended as a quick reference for using the `venv` in this project.

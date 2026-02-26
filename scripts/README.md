@@ -35,7 +35,7 @@ powershell -Command "Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPA
 Look for the adapter that corresponds to your LAN (Ethernet or Wi‑Fi) to find the Windows machine IP.
 
 ## 3) Create a tunnel (Windows → WSL2)
-When running mosquitto (or any server) inside WSL2, WSL has its own VM IP which is not reachable from other LAN devices by default. Run the following commands in an elevated (Administrator) PowerShell on Windows to forward a host port to the WSL IP.
+When running nats-server (or any server) inside WSL2, WSL has its own VM IP which is not reachable from other LAN devices by default. Run the following commands in an elevated (Administrator) PowerShell on Windows to forward a host port to the WSL IP.
 
 1) Get the current WSL IP (from WSL):
 
@@ -48,10 +48,10 @@ ip route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit
 
 ```powershell
 # allow connections on all Windows interfaces to port 1883 and forward to WSL
-netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=1883 connectaddress=<WSL_IP> connectport=1883
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=4222 connectaddress=<WSL_IP> connectport=4222
 
 # open the firewall for the port (TCP)
-powershell -Command "New-NetFirewallRule -DisplayName 'MQTT WSL2' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 1883"
+powershell -Command "New-NetFirewallRule -DisplayName 'NATS WSL2' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 4222"
 ```
 
 3) Verify the proxy on Windows:
@@ -71,5 +71,5 @@ Notes and gotchas:
 - You must run `netsh` / `New-NetFirewallRule` as Administrator.
 - WSL2 IP may change after reboot or WSL restart; you must update the `connectaddress` when it changes. Consider scripting this if you restart WSL frequently.
 - On WSL1 this is not required because the network is shared with Windows.
-- Alternatively, run mosquitto on Windows directly or on a dedicated machine/container that binds to the LAN interface.
+- Alternatively, run nats-server on Windows directly or on a dedicated machine/container that binds to the LAN interface.
 
